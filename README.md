@@ -21,7 +21,7 @@ This project compares four classification models (Logistic Regression, K-Nearest
 
 **1. All four tuned models outperform the 88.7% majority-class baseline** on production-safe features (no duration leakage).
 
-**2. Decision Tree overfits severely without regularization** — 100% train accuracy with default settings. Constraining `max_depth` is essential.
+**2. Decision Tree overfits severely without regularization** — ~100% train accuracy with default settings. Constraining `max_depth` is essential.
 
 **3. Removing `duration` reduces performance** but the models remain useful. The production model represents what the bank can actually deploy.
 
