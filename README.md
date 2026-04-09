@@ -19,32 +19,38 @@ This project compares four classification models (Logistic Regression, K-Nearest
 
 ### Key Findings
 
-**1. All four tuned models outperform the 88.7% majority-class baseline** on production-safe features (no duration leakage).
+**1. All four tuned models edge past the 88.7% majority-class baseline** on production-safe features (no duration leakage), but the accuracy gains are marginal (~1.3 pp). The real differentiation shows up in Average Precision (0.41–0.47), which captures how well models identify the minority positive class.
 
-**2. Decision Tree overfits severely without regularization** — ~100% train accuracy with default settings. Constraining `max_depth` is essential.
+**2. Decision Tree overfits severely without regularization** — ~100% train accuracy but test accuracy (84.2%) actually falls *below* baseline with default settings. Constraining `max_depth` is essential.
 
 **3. Removing `duration` reduces performance** but the models remain useful. The production model represents what the bank can actually deploy.
 
-**4. Average Precision is the right primary metric** — accuracy is misleading with 88.7% class imbalance.
+**4. Average Precision is the right primary metric** — accuracy is misleading with 88.7% class imbalance. A model that predicts "no" every time scores 88.7% accuracy with zero business value.
 
-### Actionable Insights for the Marketing Team
+### What We Learned
 
-1. **Prioritize warm leads** — clients with previous campaign success (`poutcome=success`) are the strongest positive signal
-2. **Target retirement-age and student segments** — these groups convert at much higher rates than average
-3. **Use cellular over telephone** — cellular contact has significantly higher conversion
-4. **Time campaigns strategically** — certain months show consistently higher conversion rates
-5. **Monitor economic conditions** — euribor rate and employment indicators significantly influence outcomes
-6. **Use the model to rank prospects** — score all clients before each campaign and focus resources on the top deciles
+- **Accuracy is deceptive under class imbalance.** With only ~11% positive cases, every model "looks good" at ~90% accuracy — but that's barely above always predicting "no." Average Precision and the precision-recall tradeoff are essential for evaluating models on imbalanced business problems like this one.
+- **Feature leakage can inflate results dramatically.** `duration` (call length) is only known *after* a call ends, so including it in a predictive model is cheating. Removing it drops AUC-ROC from 0.94 → 0.81 and AP from 0.62 → 0.47 — a sobering reminder to think carefully about what information is available at prediction time.
+- **Simple models can match complex ones.** Logistic Regression matched or beat KNN and SVM on every metric while training in a fraction of the time. Model complexity doesn't guarantee better performance, especially when the signal in the features is limited.
+- **Overfitting is not just a textbook concept.** The default Decision Tree memorized the training data (~100% train accuracy) and performed *worse than the baseline* on test data (84.2% vs 88.7%). Regularization via `max_depth` and `min_samples_leaf` turned it into a competitive model.
 
-### Recommended Model
-**Logistic Regression** — best balance of accuracy, speed, interpretability, and stability. Marketing managers can directly read coefficient weights to understand what drives subscriptions.
+### How This Helps the Bank
+
+The bank currently converts ~11% of marketing calls — roughly 1 in 9. Even a modest improvement in targeting has significant ROI impact at scale.
+
+1. **Score and rank prospects before each campaign** — instead of calling clients at random, use the model to prioritize the top deciles. Even with an AP of 0.47, concentrating effort on high-probability leads can substantially reduce wasted calls.
+2. **Prioritize warm leads** — clients with previous campaign success (`poutcome=success`) are the strongest positive signal. The bank should re-engage past converters first.
+3. **Target high-conversion segments** — retirement-age and student demographics convert at higher rates. Tailored messaging for these groups can amplify results.
+4. **Use cellular over telephone** — cellular contact shows significantly higher conversion rates. Shift call allocation accordingly.
+5. **Time campaigns to economic conditions** — euribor rate and employment indicators significantly influence outcomes. Launching campaigns during favorable economic windows improves response rates.
+6. **Adopt Logistic Regression as the production model** — it's fast, interpretable (marketing managers can read the coefficient weights directly), and matched the best-performing models. Interpretability matters: the team needs to understand *why* a client is flagged, not just that they are.
 
 ### Next Steps
 1. **Deploy production model** (without duration) for campaign targeting
-2. **Address class imbalance** — SMOTE, `class_weight='balanced'`, or threshold tuning
+2. **Address class imbalance** — SMOTE, `class_weight='balanced'`, or threshold tuning to improve recall on the minority class
 3. **Engineer additional features** — age bins, economic trend indicators, interaction terms
 4. **Try ensemble methods** — Random Forest and Gradient Boosting for nonlinear patterns
-5. **A/B test** — pilot campaign comparing model-selected vs random contacts
+5. **A/B test** — pilot campaign comparing model-selected vs random contacts to measure real-world lift
 6. **Retrain periodically** — economic conditions and client demographics shift over time
 
 ## Repository Structure
