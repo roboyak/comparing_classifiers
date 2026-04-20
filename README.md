@@ -15,23 +15,25 @@ This project compares four classification models (Logistic Regression, K-Nearest
 
 ## Jupyter Notebook
 
-[View the full analysis notebook](prompt_III.ipynb)
+- [View the full analysis](prompt_III.ipynb)
 
 ### Key Findings
 
-**1. All four tuned models edge past the 88.7% majority-class baseline** on production-safe features (no duration leakage), but the accuracy gains are marginal (~1.3 pp). The real differentiation shows up in Average Precision (0.41–0.47), which captures how well models identify the minority positive class.
+**1. All four tuned models edge past the 88.7% majority-class baseline** on production-safe features (no duration leakage), but the accuracy gains are marginal (~1.1-1.5 pp). The real differentiation shows up in Average Precision (~0.40-0.47), which captures how well models identify the minority positive class.
 
 **2. Decision Tree overfits severely without regularization** — ~100% train accuracy but test accuracy (84.2%) actually falls *below* baseline with default settings. Constraining `max_depth` is essential.
 
 **3. Removing `duration` reduces performance** but the models remain useful. The production model represents what the bank can actually deploy.
 
-**4. Average Precision is the right primary metric** — accuracy is misleading with 88.7% class imbalance. A model that predicts "no" every time scores 88.7% accuracy with zero business value.
+**4. In the expanded SVC search, `rbf` beats `linear` decisively**. The best SVM in the latest run is `C=0.1, kernel='rbf'`, but it still trails Logistic Regression on tuned Average Precision.
+
+**5. Average Precision is the right primary metric** — accuracy is misleading with 88.7% class imbalance. A model that predicts "no" every time scores 88.7% accuracy with zero business value.
 
 ### What We Learned
 
 - **Accuracy is deceptive under class imbalance.** With only ~11% positive cases, every model "looks good" at ~90% accuracy — but that's barely above always predicting "no." Average Precision and the precision-recall tradeoff are essential for evaluating models on imbalanced business problems like this one.
 - **Feature leakage can inflate results dramatically.** `duration` (call length) is only known *after* a call ends, so including it in a predictive model is cheating. Removing it drops AUC-ROC from 0.94 → 0.81 and AP from 0.62 → 0.47 — a sobering reminder to think carefully about what information is available at prediction time.
-- **Simple models can match complex ones.** Logistic Regression matched or beat KNN and SVM on every metric while training in a fraction of the time. Model complexity doesn't guarantee better performance, especially when the signal in the features is limited.
+- **Simple models can still win.** In the SVC variant, SVM gets a tiny bump in untuned accuracy, but Logistic Regression remains the better production model overall: it is dramatically faster, more interpretable, and still leads on the tuned ranking metric (Average Precision). When we explicitly tune `kernel in ['rbf', 'linear']`, `rbf` wins and `linear` falls off sharply, so the extra SVM complexity still does not pay off here.
 - **Overfitting is not just a textbook concept.** The default Decision Tree memorized the training data (~100% train accuracy) and performed *worse than the baseline* on test data (84.2% vs 88.7%). Regularization via `max_depth` and `min_samples_leaf` turned it into a competitive model.
 
 ### How This Helps the Bank
@@ -43,7 +45,7 @@ The bank currently converts ~11% of marketing calls — roughly 1 in 9. Even a m
 3. **Target high-conversion segments** — retirement-age and student demographics convert at higher rates. Tailored messaging for these groups can amplify results.
 4. **Use cellular over telephone** — cellular contact shows significantly higher conversion rates. Shift call allocation accordingly.
 5. **Time campaigns to economic conditions** — euribor rate and employment indicators significantly influence outcomes. Launching campaigns during favorable economic windows improves response rates.
-6. **Adopt Logistic Regression as the production model** — it's fast, interpretable (marketing managers can read the coefficient weights directly), and matched the best-performing models. Interpretability matters: the team needs to understand *why* a client is flagged, not just that they are.
+6. **Adopt Logistic Regression as the production model** — it's fast, interpretable (marketing managers can read the coefficient weights directly), and remains the strongest overall choice once we prioritize tuned Average Precision over raw untuned accuracy. Interpretability matters: the team needs to understand *why* a client is flagged, not just that they are.
 
 ### Next Steps
 1. **Deploy production model** (without duration) for campaign targeting
@@ -56,7 +58,7 @@ The bank currently converts ~11% of marketing calls — roughly 1 in 9. Even a m
 ## Repository Structure
 ```
 ├── README.md                          # This file — summary of findings
-├── prompt_III.ipynb                          # Main analysis notebook
+├── prompt_III.ipynb                   # Jupyter notebook with detailed findings
 └── data/
-    └── bank-additional-full.csv              # Data set being studied
+    └── bank-additional-full.csv       # Data set being studied
 ```
